@@ -48,10 +48,11 @@
         <div class="section-heading">
           <div>
             <h2 id="listTitle">Préstamos registrados</h2>
-            <p class="help">Puede marcar un préstamo como devuelto.</p>
+            <p class="help">Puede marcar un préstamo como devuelto o cancelarlo.</p>
           </div>
           <span class="counter" id="activeCount">0 activos</span>
         </div>
+        <p class="list-message" id="listMessage" aria-live="polite"></p>
 
         <div class="table-wrap">
           <table>
@@ -71,6 +72,20 @@
         <p class="empty-state" id="emptyState">Aún no hay préstamos registrados.</p>
       </section>
     </main>
+
+    <div class="modal-overlay" id="cancelModal" hidden>
+      <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="cancelModalTitle" aria-describedby="cancelModalDesc">
+        <h3 id="cancelModalTitle">Cancelar préstamo</h3>
+        <p id="cancelModalDesc">
+          ¿Desea cancelar el préstamo de <strong id="cancelModalDetails">—</strong>?
+          El estado cambiará a <strong>Cancelado</strong> y el equipo quedará disponible nuevamente.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="cancelModalDismiss">Volver</button>
+          <button type="button" class="danger" id="cancelModalConfirm">Sí, cancelar préstamo</button>
+        </div>
+      </div>
+    </div>
 
     <footer>Actividad individual — ver README.md y la guía del docente.</footer>
     <script src="app.js"></script>

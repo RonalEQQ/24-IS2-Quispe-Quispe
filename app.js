@@ -20,6 +20,14 @@ const formMessage = document.querySelector("#formMessage");
 const loanList = document.querySelector("#loanList");
 const emptyState = document.querySelector("#emptyState");
 const activeCount = document.querySelector("#activeCount");
+const listMessage = document.querySelector("#listMessage");
+
+// Elementos del modal de confirmación de cancelación (mejora Ficha 24)
+const cancelModal = document.querySelector("#cancelModal");
+const cancelModalDetails = document.querySelector("#cancelModalDetails");
+const cancelModalConfirm = document.querySelector("#cancelModalConfirm");
+const cancelModalDismiss = document.querySelector("#cancelModalDismiss");
+let pendingCancelId = null;
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -59,6 +67,12 @@ function formatDate(dateValue) {
   return new Intl.DateTimeFormat("es-PE", { dateStyle: "medium" }).format(new Date(`${dateValue}T00:00:00`));
 }
 
+function statusClassFor(status) {
+  if (status === "Activo") return "status-active";
+  if (status === "Cancelado") return "status-cancelled";
+  return "status-returned";
+}
+
 function renderLoans() {
   const loans = loadLoans();
   loanList.innerHTML = "";
@@ -70,8 +84,13 @@ function renderLoans() {
       <td>${loan.borrower}</td>
       <td>${formatDate(loan.loanDate)}</td>
       <td>${formatDate(loan.returnDate)}</td>
-      <td><span class="status ${isActive ? "status-active" : "status-returned"}">${loan.status}</span></td>
-      <td>${isActive ? `<button type="button" class="return-btn" data-id="${loan.id}">Registrar devolución</button>` : "—"}</td>`;
+      <td><span class="status ${statusClassFor(loan.status)}">${loan.status}</span></td>
+      <td class="actions-cell">${
+        isActive
+          ? `<button type="button" class="return-btn" data-id="${loan.id}">Registrar devolución</button>
+             <button type="button" class="cancel-btn" data-id="${loan.id}">Cancelar préstamo</button>`
+          : "—"
+      }</td>`;
     loanList.append(row);
   });
   const active = loans.filter((loan) => loan.status === "Activo").length;
@@ -119,21 +138,73 @@ form.addEventListener("submit", (event) => {
   loanDateInput.value = todayISO();
   returnDateInput.value = todayISO();
   showMessage("");
+  if (listMessage) listMessage.textContent = "";
   renderLoans();
 });
 
 loanList.addEventListener("click", (event) => {
-  const button = event.target.closest(".return-btn");
-  if (!button) return;
-  const loans = loadLoans().map((loan) => loan.id === button.dataset.id ? { ...loan, status: "Devuelto" } : loan);
+  const returnButton = event.target.closest(".return-btn");
+  if (returnButton) {
+    const loans = loadLoans().map((loan) => loan.id === returnButton.dataset.id ? { ...loan, status: "Devuelto" } : loan);
+    saveLoans(loans);
+    if (listMessage) listMessage.textContent = "";
+    renderLoans();
+    return;
+  }
+
+  const cancelButton = event.target.closest(".cancel-btn");
+  if (cancelButton) {
+    const loan = loadLoans().find((item) => item.id === cancelButton.dataset.id);
+    if (loan) openCancelModal(loan);
+  }
+});
+
+// --- Mejora Ficha 24: cancelación de préstamo con confirmación ---
+function openCancelModal(loan) {
+  pendingCancelId = loan.id;
+  cancelModalDetails.textContent = `${loan.equipmentName} — ${loan.borrower}`;
+  cancelModal.hidden = false;
+  cancelModalConfirm.focus();
+}
+
+function closeCancelModal() {
+  cancelModal.hidden = true;
+  pendingCancelId = null;
+}
+
+cancelModalDismiss.addEventListener("click", () => {
+  // Cancelar la acción del modal: no se modifica ningún registro (CP-02).
+  closeCancelModal();
+});
+
+cancelModal.addEventListener("click", (event) => {
+  if (event.target === cancelModal) closeCancelModal();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !cancelModal.hidden) closeCancelModal();
+});
+
+cancelModalConfirm.addEventListener("click", () => {
+  // Confirmar la cancelación: cambia el estado a "Cancelado" y libera el equipo (CP-01).
+  if (!pendingCancelId) return;
+  const loans = loadLoans().map((loan) =>
+    loan.id === pendingCancelId ? { ...loan, status: "Cancelado" } : loan
+  );
   saveLoans(loans);
+  const cancelled = loans.find((loan) => loan.id === pendingCancelId);
+  closeCancelModal();
   renderLoans();
+  if (listMessage && cancelled) {
+    listMessage.textContent = `Préstamo de "${cancelled.equipmentName}" — ${cancelled.borrower} cancelado. El equipo está disponible nuevamente.`;
+  }
 });
 
 document.querySelector("#resetDemoBtn").addEventListener("click", () => {
   if (confirm("¿Desea eliminar todos los préstamos guardados en este navegador?")) {
     localStorage.removeItem(STORAGE_KEY);
     showMessage("");
+    if (listMessage) listMessage.textContent = "";
     renderLoans();
   }
 });
