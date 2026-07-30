@@ -52,7 +52,7 @@ Se agregó la posibilidad de **cancelar un préstamo activo**, liberando el equi
 
 ## Entrega
 
-- URL del repositorio individual: `https://github.com/<usuario>/24-IS2-Quispe-Quispe`
-- URL pública de GitHub Pages: `https://<usuario>.github.io/24-IS2-Quispe-Quispe/`
+- URL del repositorio individual: https://github.com/RonalEQQ/24-IS2-Quispe-Quispe
+- URL pública de GitHub Pages: https://ronaleqq.github.io/24-IS2-Quispe-Quispe/
 - README actualizado con los dos casos de prueba. ✅
 
